@@ -1,0 +1,233 @@
+{
+	"info": {
+		"_postman_id": "aa23eee9-769a-46c7-80d7-b20c41fdd837",
+		"name": "EPIC on FHIR Backend App",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23477697"
+	},
+	"item": [
+		{
+			"name": "Token Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"",
+							"const access_token = jsonData.access_token;",
+							"pm.environment.set(\"access_token\", access_token);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_assertion_type",
+							"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+							"type": "text"
+						},
+						{
+							"key": "client_assertion",
+							"value": "{{CLIENT_ASSERTION_JWT}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{TOKEN_ENDPOINT}}",
+					"host": [
+						"{{TOKEN_ENDPOINT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Patient by ID",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{FHIR_ENDPOINT}}/{{FHIR_VERSION}}/Patient/{{PATIENT_ID}}",
+					"host": [
+						"{{FHIR_ENDPOINT}}"
+					],
+					"path": [
+						"{{FHIR_VERSION}}",
+						"Patient",
+						"{{PATIENT_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Init Bulk Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 202) {",
+							"    const bulkRequestContentLocation = pm.response.headers.get('Content-Location');",
+							"    const bulkRequestId = bulkRequestContentLocation.split('/').pop();",
+							"",
+							"    pm.environment.set(\"bulk_request_id\", bulkRequestId);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/fhir+json"
+					},
+					{
+						"key": "Prefer",
+						"value": "respond-async"
+					}
+				],
+				"url": {
+					"raw": "{{FHIR_ENDPOINT}}/{{FHIR_VERSION}}/Group/{{BULK_GROUP_ID}}/$export?_type=Patient,Observation",
+					"host": [
+						"{{FHIR_ENDPOINT}}"
+					],
+					"path": [
+						"{{FHIR_VERSION}}",
+						"Group",
+						"{{BULK_GROUP_ID}}",
+						"$export"
+					],
+					"query": [
+						{
+							"key": "_type",
+							"value": "Patient,Observation"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Query Bulk Request Status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{FHIR_ENDPOINT}}/BulkRequest/{{bulk_request_id}}",
+					"host": [
+						"{{FHIR_ENDPOINT}}"
+					],
+					"path": [
+						"BulkRequest",
+						"{{bulk_request_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Bulk Patient",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{FHIR_ENDPOINT}}/BulkRequest/{{bulk_request_id}}",
+					"host": [
+						"{{FHIR_ENDPOINT}}"
+					],
+					"path": [
+						"BulkRequest",
+						"{{bulk_request_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
